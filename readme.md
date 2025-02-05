@@ -50,7 +50,7 @@ This section imports all the necessary libraries and modules for the application
 *   **google.cloud.secretmanager:**  Used for securely accessing secrets stored in Google Cloud Secret Manager, such as database credentials.
 *   **json:**  Handles JSON data for parsing and serialization.
 *   **sqlalchemy.dialects.postgresql.UUID & uuid:** These are for working with UUIDs (Universally Unique Identifiers) in PostgreSQL databases.
-*   **connectors.postgres.CloudSQLPostgresConnector:** A custom connector (presumably) for simplifying connections to Cloud SQL PostgreSQL instances.
+*   **connectors.postgres.CloudSQLPostgresConnector:** A custom connector for simplifying connections to Cloud SQL PostgreSQL instances.
 *   **langchain_postgres.vectorstores.PGVector:**  Used for storing and retrieving vector embeddings from a PostgreSQL database, likely using a vector extension.
 *   **langchain_google_vertexai.VertexAIEmbeddings:** Used for embedding text using the Vertex AI embedding models.
 *   **logging & traceback:** These are for logging errors and debugging the application.
