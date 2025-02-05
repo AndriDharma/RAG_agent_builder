@@ -32,6 +32,101 @@ The application follows a microservices-oriented architecture with clear separat
 7.  **Cloud SQL (PostgreSQL):** A managed relational database service that stores user interactions, feedback data.
 8.  **Cloud Run:** A fully managed serverless platform that hosts the Streamlit application, providing automatic scaling and handling infrastructure concerns.
 
+## Code Snippets
+<img src="https://github.com/AndriDharma/RAG_agent_builder/blob/main/images/1.png" alt="Imports Snippet" width="600">
+
+This section imports all the necessary libraries and modules for the application:
+
+*   **streamlit as st:**  Used for creating the interactive web interface.
+*   **vertexai:** The core Google Cloud Vertex AI SDK for interacting with models.
+*   **vertexai.generative_models:** Specific classes for working with generative models like Gemini.  This includes `GenerativeModel`, `Part`, `Content`, `FinishReason`, and `SafetySetting`.
+*    **vertexai.preview.generative_models as generative_models:** Accessing preview features of generative models from Vertex AI.
+*   **os:** Provides a way to interact with the operating system, mainly to retrieve environment variables.
+*   **requests:** A library for making HTTP requests, used here potentially for querying external APIs or services.
+*   **google.auth.\*:** Libraries from Google Auth to manage authentication and authorization to Google Cloud Services.
+*   **streamlit.runtime.scriptrunner:** Utility for managing Streamlit script execution context.
+*   **google.cloud.sql.connector & sqlalchemy:** Used for connecting to and interacting with Google Cloud SQL databases, using SQLAlchemy as an ORM.
+*   **google.cloud.logging:** Logging is used to debug and monitor the application
+*   **google.cloud.secretmanager:**  Used for securely accessing secrets stored in Google Cloud Secret Manager, such as database credentials.
+*   **json:**  Handles JSON data for parsing and serialization.
+*   **sqlalchemy.dialects.postgresql.UUID & uuid:** These are for working with UUIDs (Universally Unique Identifiers) in PostgreSQL databases.
+*   **connectors.postgres.CloudSQLPostgresConnector:** A custom connector (presumably) for simplifying connections to Cloud SQL PostgreSQL instances.
+*   **langchain_postgres.vectorstores.PGVector:**  Used for storing and retrieving vector embeddings from a PostgreSQL database, likely using a vector extension.
+*   **langchain_google_vertexai.VertexAIEmbeddings:** Used for embedding text using the Vertex AI embedding models.
+*   **logging & traceback:** These are for logging errors and debugging the application.
+
+
+<img src="https://github.com/AndriDharma/RAG_agent_builder/blob/main/images/2.png" alt="Environment Variables Snippet" width="600">
+
+### This snippet initializes the logging client and retrieves environment variables.  Using environment variables is crucial for security and configuration:
+
+*   **Logging Setup:**  The first two lines initialize the Google Cloud Logging client, allowing the application to send logs to Google Cloud Logging for monitoring and debugging.
+*   **Environment Variables:**
+    *   `PROJECT_ID`: Your Google Cloud Project ID.
+    *   `COLLECTION_NAME`: The name of the collection in your discovery engine.
+    *   `ENGINE_NAME`: The name of the search engine in your discovery engine.
+    *   `SECRET_ID_DB`: The ID of the secret in Google Cloud Secret Manager that stores your database credentials.
+    *   `driver`: Specifies the database driver to use.  It defaults to "pg8000".
+
+<img src="https://github.com/AndriDharma/RAG_agent_builder/blob/main/images/3.png" alt="Gemini Configuration Snippet" width="600">
+
+This section configures and initializes the Gemini model using the `vertexai` library:
+
+*   **`generation_config`:** Defines the parameters for text generation:
+    *   `max_output_tokens`:  The maximum number of tokens the model can generate in its response.
+    *   `temperature`: Controls the randomness of the output.  Higher values (e.g., 1.0) lead to more random and creative outputs, while lower values (e.g., 0.2) produce more predictable and conservative outputs.
+    *   `top_p`:  Nucleus sampling.  The model considers the most probable tokens whose probabilities add up to `top_p`. A lower `top_p` leads to more focused and less diverse output.
+
+*   **`safety_settings`:** Defines the safety settings to filter responses.  The categories include hate speech, dangerous content, sexually explicit content, and harassment.  The `HarmBlockThreshold` is set to `BLOCK_MEDIUM_AND_ABOVE`, meaning that responses that are considered medium or highly harmful in these categories will be blocked.
+
+*   **`gemini_main()` Function:** This function initializes the Gemini model with specific configuration for retail customer service question answering based on RAG and cached the function with streamlit.
+    *   `vertexai.init()`: Initializes the Vertex AI SDK with your `PROJECT_ID` and location.
+    *   `GenerativeModel()`: Creates an instance of the Gemini model, specifying the model name (`gemini-1.5-pro-002`), the `generation_config`, and a `system_instruction`.
+    *    `system_instruction`: Sets the behavior of the model
+
+*   **`gemini_paraphrase()` Function:** Initializes Gemini model for paraphrase function
+
+*   **`@st.cache_resource`:** This decorator from Streamlit caches the output of the function.  This is *critical* for performance because it prevents the model from being re-initialized on every rerun of the Streamlit app.  Model initialization can be slow.
+
+<img src="https://github.com/AndriDharma/RAG_agent_builder/blob/main/images/4.png" alt="Search Function Snippet" width="600">
+
+This function handles the search and retrieval of relevant documents:
+
+*   **`search_with_answer(query, session, agent)`:** Takes the user's `query`, a `session` ID, and an `agent` identifier as input.
+*   **API Authentication (Commented Out):** The code commented out are for api authentication.
+*   **Session Management:**
+    *   If `session` is empty, it constructs a new session identifier.
+    *   Otherwise, it reuses the existing session.
+*   **`request_data_search`:** This dictionary defines the search request payload:
+    *   `query`: The user's search query.
+    *   `pageSize`: The maximum number of results to return (set to 10).
+    *   `queryExpansionSpec`: Enables automatic query expansion.
+    *   `spellCorrectionSpec`: Enables automatic spell correction.
+    *   `contentSearchSpec`:
+        *   `snippetSpec`:  Requests document snippets to be returned.
+        *   `extractiveContentSpec`: Requests the extraction of a single answer from the document.
+    *   `session`:  Includes the session identifier.
+*    **requests.post:** This performs an HTTP POST request to search the query, with the specified `url`, `json` payload (`request_data_search`)
+*   **Returns:** The function returns the JSON response from the search API.
+
+<img src="https://github.com/AndriDharma/RAG_agent_builder/blob/main/images/5.png" alt="Access Secret Snippet" width="600">
+
+This function securely retrieves secrets (like database credentials) from Google Cloud Secret Manager and initializes the Vertex AI embeddings model:
+
+*   **`access_secret()`:** This function retrieves the database secret from Google Cloud Secret Manager.
+*   **`secretmanager.SecretManagerServiceClient()`:** Creates a client for interacting with the Secret Manager API.
+*   **`name`:** Constructs the resource name of the secret to retrieve. It uses the `PROJECT_ID` and `SECRET_ID_DB` environment variables.
+*   **`client.access_secret_version()`:** Retrieves the secret version.
+*   **`payload`:** Extracts the secret data from the response and decodes it from bytes to a UTF-8 string.
+*   **`json.loads()`:** Parses the JSON string into a Python dictionary (`db_secret`).
+*   **Returns:** The function returns the `db_secret` dictionary containing the database credentials.
+*   **`@st.cache_resource`:** Caches the output of this function to avoid repeated calls to Secret Manager.
+*   **`embeddings_model()`:**  This function initializes the Vertex AI embeddings model.
+*   **`vertexai.init()`:** Initializes the Vertex AI SDK with your `PROJECT_ID` and location.
+*   **`VertexAIEmbeddings()`:** Creates an instance of the Vertex AI embeddings model, specifying the model name (`text-multilingual-embedding-002`).
+*   **Returns:**  The function returns the `embeddings` object.
+*   **`@st.cache_resource`:** Caches the embeddings model instance to improve performance.
+
 ## Prerequisites
 
 Before you begin, ensure you have the following:
@@ -106,7 +201,7 @@ These steps need to be performed in your GCP project.
 1.  **Clone the Repository:**
 
     ```bash
-    git clone <YOUR_GITHUB_REPOSITORY_URL>
+    git clone https://github.com/AndriDharma/RAG_agent_builder
     cd streamlit
     ```
 2.  **Run the Deployment Script:**
