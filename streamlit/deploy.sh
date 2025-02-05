@@ -43,7 +43,8 @@ gcloud run deploy $SERVICE_NAME \
   --service-account $SERVICE_ACCOUNT \
   --min-instances $MIN_INSTANCES \
   --max-instances $MAX_INSTANCES \
-  --add-cloudsql-instances=$INSTANCE_CONNECTION_NAME
+  --add-cloudsql-instances=$INSTANCE_CONNECTION_NAME \
+  --allow-unauthenticated
 
 SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --region $REGION --format 'value(status.url)')
 echo "Service deployed to: $SERVICE_URL"
