@@ -212,7 +212,7 @@ These steps need to be performed in your GCP project.
 
     The script will:
 
-    *   Authenticate to GCP using the service account.
+    *   Authenticate to GCP using your local credentials
     *   Set the current project and region.
     *   Build the Docker image using cloud build.
     *   Push the Docker image to Artifact Registry.
