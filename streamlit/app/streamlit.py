@@ -24,9 +24,6 @@ from langchain_google_vertexai import VertexAIEmbeddings
 import logging
 import traceback
 
-
-# os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = r"C:\Users\ASUS\Documents\Job\Datalabs\2025\service_account\dla-gen-ai-specialization-a03e18685e07.json" # Isi dengan Service Account
-
 log_client = google.cloud.logging.Client()
 log_client.setup_logging()
 
@@ -35,10 +32,6 @@ COLLECTION_NAME = os.environ.get('COLLECTION_NAME')
 ENGINE_NAME = os.environ.get('ENGINE_NAME')
 SECRET_ID_DB = os.environ.get('SECRET_ID_DB')
 driver = os.environ.get("DRIVER", "pg8000")
-# PROJECT_ID = "844021890758"
-# COLLECTION_NAME = "default_collection"
-# ENGINE_NAME = "demo2-test_1736323106527"
-# SECRET_ID_DB = "db-secret"
 
 ctx = get_script_run_ctx()
 session_global = ctx.session_id
@@ -89,11 +82,6 @@ def gemini_paraphrase():
 
 def search_with_answer(query,session,agent):
     url_search = f"https://discoveryengine.googleapis.com/v1alpha/projects/{PROJECT_ID}/locations/global/collections/{COLLECTION_NAME}/engines/{agent}/servingConfigs/default_search:search"
-    # API credential
-    # credentials = service_account.Credentials.from_service_account_file(
-    #     os.environ['GOOGLE_APPLICATION_CREDENTIALS'],
-    #     scopes=['https://www.googleapis.com/auth/cloud-platform']
-    # )
     credentials, _ = google.auth.default()
     request_token = google.auth.transport.requests.Request()
     credentials.refresh(request_token)

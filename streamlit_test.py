@@ -22,10 +22,10 @@ os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = r"C:\Users\ASUS\Documents\Job\Dat
 log_client = google.cloud.logging.Client()
 log_client.setup_logging()
 
-PROJECT_ID = "844021890758"
-COLLECTION_NAME = "default_collection"
-ENGINE_NAME = "demo2-test_1736323106527"
-SECRET_ID_DB = "db-secret"
+# PROJECT_ID = "844021890758"
+# COLLECTION_NAME = "default_collection"
+# ENGINE_NAME = "demo2-test_1736323106527"
+# SECRET_ID_DB = "db-secret"
 
 ctx = get_script_run_ctx()
 session_global = ctx.session_id
