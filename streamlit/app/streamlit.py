@@ -173,42 +173,6 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 
-# feedback function
-def save_feedback():
-    user_text = str(st.session_state.messages[-2]["content"])
-    ai_text = str(st.session_state.messages[-1]["content"])
-    if st.session_state.feedback == 1: # 1 means thumbs up
-        embed_text = embeddings.embed_query(user_text) # embed the question
-        metadata = {
-            "user_chat" : user_text,
-            "ai_chat" :ai_text
-        }
-        texts = [user_text]
-        embeddings_text = [embed_text]
-        metadata = [metadata]
-        vector_store.add_embeddings(
-            texts=texts,
-            embeddings=embeddings_text,
-            metadatas=metadata
-        )
-    elif st.session_state.feedback == 0: # 0 means thumbs down
-        feedback_text = st.text_input("Write your feedback here which consist of correct answer", "Feedback")
-        embed_text = embeddings.embed_query(feedback_text) # embed the question
-        metadata = {
-            "user_chat" : user_text,
-            "ai_chat" :feedback_text
-        }
-        texts = [user_text]
-        embeddings_text = [embed_text]
-        metadata = [metadata]
-        vector_store.add_embeddings(
-            texts=texts,
-            embeddings=embeddings_text,
-            metadatas=metadata
-        )
-
-    st.session_state.get_feedback = False
-
 #initialize
 # db connection
 connector = Connector()
