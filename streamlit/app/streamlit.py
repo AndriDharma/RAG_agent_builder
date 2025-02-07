@@ -82,6 +82,7 @@ def gemini_paraphrase():
 
 def search_with_answer(query,session,agent):
     url_search = f"https://discoveryengine.googleapis.com/v1alpha/projects/{PROJECT_ID}/locations/global/collections/{COLLECTION_NAME}/engines/{agent}/servingConfigs/default_search:search"
+
     credentials, _ = google.auth.default()
     request_token = google.auth.transport.requests.Request()
     credentials.refresh(request_token)
@@ -163,6 +164,9 @@ if "messages" not in st.session_state:
 if "get_feedback" not in st.session_state:
     st.session_state.get_feedback = False
 
+if "feedback_text" not in st.session_state:
+    st.session_state.feedback_text = ""  # Initialize feedback text
+
 # Display chat messages from history on app rerun
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
@@ -205,6 +209,29 @@ def save_feedback():
 
     st.session_state.get_feedback = False
 
+#initialize
+# db connection
+connector = Connector()
+db_secret = access_secret()
+
+
+# prepare vectorstore
+connector = CloudSQLPostgresConnector(
+    instance_name=db_secret["INSTANCE_CONNECTION_NAME"],
+    user=db_secret['DB_USER'],
+    password=db_secret["DB_PASS"],
+    database=db_secret["DB_NAME"],
+    driver=driver
+)
+company_id = "datalabs"
+engine = connector.get_engine()
+embeddings = embeddings_model()
+vector_store = PGVector(
+    embeddings=embeddings,
+    collection_name=company_id,
+    connection=engine,
+    use_jsonb=True
+)
 
 # Accept user input
 if prompt := st.chat_input("What is up?"):
@@ -215,28 +242,28 @@ if prompt := st.chat_input("What is up?"):
 
     # Display assistant response in chat message container
     with st.chat_message("assistant"):
-        # db connection
-        connector = Connector()
-        db_secret = access_secret()
+        # # db connection
+        # connector = Connector()
+        # db_secret = access_secret()
 
 
-        # prepare vectorstore
-        connector = CloudSQLPostgresConnector(
-            instance_name=db_secret["INSTANCE_CONNECTION_NAME"],
-            user=db_secret['DB_USER'],
-            password=db_secret["DB_PASS"],
-            database=db_secret["DB_NAME"],
-            driver=driver
-        )
-        company_id = "datalabs"
-        engine = connector.get_engine()
-        embeddings = embeddings_model()
-        vector_store = PGVector(
-            embeddings=embeddings,
-            collection_name=company_id,
-            connection=engine,
-            use_jsonb=True
-        )
+        # # prepare vectorstore
+        # connector = CloudSQLPostgresConnector(
+        #     instance_name=db_secret["INSTANCE_CONNECTION_NAME"],
+        #     user=db_secret['DB_USER'],
+        #     password=db_secret["DB_PASS"],
+        #     database=db_secret["DB_NAME"],
+        #     driver=driver
+        # )
+        # company_id = "datalabs"
+        # engine = connector.get_engine()
+        # embeddings = embeddings_model()
+        # vector_store = PGVector(
+        #     embeddings=embeddings,
+        #     collection_name=company_id,
+        #     connection=engine,
+        #     use_jsonb=True
+        # )
         gemini_main_model = gemini_main()
         gemini_paraphrase_model = gemini_paraphrase()
 
@@ -347,4 +374,41 @@ if prompt := st.chat_input("What is up?"):
     st.session_state.get_feedback = True
 
 if st.session_state.get_feedback:
-    st.feedback("thumbs", key="feedback", on_change=save_feedback)
+    st.feedback("thumbs", key="feedback")  # No on_change here initially
+    if st.session_state.feedback == 0:
+        st.session_state.feedback_text = st.text_area("Write your feedback here which consist of correct answer", value=st.session_state.feedback_text, placeholder="feedback")
+        # Text area is better for feedback, and we load/save the value
+    if (st.session_state.feedback == 0) or (st.session_state.feedback ==1):
+        if st.button("Submit Feedback"):
+            user_text = str(st.session_state.messages[-2]["content"])
+            ai_text = str(st.session_state.messages[-1]["content"])
+            if st.session_state.feedback == 1: # 1 means thumbs up
+                embed_text = embeddings.embed_query(user_text) # embed the question
+                metadata = {
+                    "user_chat" : user_text,
+                    "ai_chat" :ai_text
+                }
+                texts = [user_text]
+                embeddings_text = [embed_text]
+                metadata = [metadata]
+                vector_store.add_embeddings(
+                    texts=texts,
+                    embeddings=embeddings_text,
+                    metadatas=metadata
+                )
+            elif st.session_state.feedback == 0: # 0 means thumbs down
+                embed_text = embeddings.embed_query(user_text) # embed the question               
+                metadata = {
+                    "user_chat" : user_text,
+                    "ai_chat" :st.session_state.feedback_text
+                }
+                texts = [user_text]
+                embeddings_text = [embed_text]
+                metadata = [metadata]
+                vector_store.add_embeddings(
+                    texts=texts,
+                    embeddings=embeddings_text,
+                    metadatas=metadata
+                )
+            st.session_state.get_feedback = False
+            st.success("Feedback submitted!") # Display success message

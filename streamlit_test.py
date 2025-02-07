@@ -22,10 +22,10 @@ os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = r"C:\Users\ASUS\Documents\Job\Dat
 log_client = google.cloud.logging.Client()
 log_client.setup_logging()
 
-# PROJECT_ID = "844021890758"
-# COLLECTION_NAME = "default_collection"
-# ENGINE_NAME = "demo2-test_1736323106527"
-# SECRET_ID_DB = "db-secret"
+PROJECT_ID = "844021890758"
+COLLECTION_NAME = "default_collection"
+ENGINE_NAME = "demo2-test_1736323106527"
+SECRET_ID_DB = "db-secret"
 
 ctx = get_script_run_ctx()
 session_global = ctx.session_id
@@ -161,14 +161,6 @@ def save_feedback():
             f.write(feedback_text+"\n")
             f.write(str(st.session_state.feedback)+"\n")
 
-    # with  open("myfile.txt", "a") as f:
-    #     f.write(str(st.session_state.messages[-2]["role"])+"\n")
-    #     f.write(str(st.session_state.messages[-2]["content"])+"\n")
-    #     f.write(str(st.session_state.messages[-1]["role"])+"\n")
-    #     f.write(str(st.session_state.messages[-1]["content"])+"\n")
-    #     f.write(str(st.session_state.feedback)+"\n")
-    #     feedback = st.text_input("Write your feedback here", "Feedback")
-    #     st.write("your feedback is ", feedback)
     st.session_state.get_feedback = False
 
 
@@ -183,6 +175,9 @@ if "messages" not in st.session_state:
 # Initialize feedback
 if "get_feedback" not in st.session_state:
     st.session_state.get_feedback = False
+    
+if "feedback_text" not in st.session_state:
+    st.session_state.feedback_text = ""  # Initialize feedback text
 
 # Display chat messages from history on app rerun
 for message in st.session_state.messages:
@@ -302,5 +297,27 @@ if prompt := st.chat_input("What is up?"):
     st.session_state.get_feedback = True
 
 if st.session_state.get_feedback:
-    st.feedback("thumbs", key="feedback", on_change=save_feedback)
+    st.feedback("thumbs", key="feedback")  # No on_change here initially
+    if st.session_state.feedback == 0:
+        st.session_state.feedback_text = st.text_area("Write your feedback here which consist of correct answer", value=st.session_state.feedback_text, placeholder="feedback")
+        # Text area is better for feedback, and we load/save the value
+    if (st.session_state.feedback == 0) or (st.session_state.feedback ==1):
+        if st.button("Submit Feedback"):
+            if st.session_state.feedback == 1: # 1 means thumbs up
+                # feedback_text = st.text_input("Write your feedback here", "Feedback")
+                with  open("myfile.txt", "a") as f:
+                    f.write(str(st.session_state.messages[-2]["role"])+"\n")
+                    f.write(str(st.session_state.messages[-2]["content"])+"\n")
+                    f.write(str(st.session_state.messages[-1]["role"])+"\n")
+                    f.write(str(st.session_state.messages[-1]["content"])+"\n")
+                    f.write(str(st.session_state.feedback)+"\n")
+            elif st.session_state.feedback == 0: # 0 means thumbs down
+                with  open("myfile.txt", "a") as f:
+                    f.write(str(st.session_state.messages[-2]["role"])+"\n")
+                    f.write(str(st.session_state.messages[-2]["content"])+"\n")
+                    f.write(str(st.session_state.messages[-1]["role"])+"\n")
+                    f.write(st.session_state.feedback_text+"\n")
+                    f.write(str(st.session_state.feedback)+"\n")
 
+            st.session_state.get_feedback = False
+            st.success("Feedback submitted!") # Display success message
